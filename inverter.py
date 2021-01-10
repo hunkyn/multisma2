@@ -36,7 +36,7 @@ class Inverter:
         return True
 
     async def close(self):
-        """Log out of the interter."""
+        """Log out of the intverter."""
         if self._sma:
             await self._sma.close_session()
             self._sma = None
