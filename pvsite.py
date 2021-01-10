@@ -39,9 +39,12 @@ class Site:
     async def run(self):
         month = 6
         year = 2020
-        start = int((datetime.datetime.combine(datetime.date.today().replace(year=year, month=month, day=1), datetime.time(23, 0)) - datetime.timedelta(days=1)).timestamp())
-        stop = int((datetime.datetime.combine(datetime.date.today(), datetime.time(3, 0))).timestamp())
-        histories = await asyncio.gather(*(inverter.read_history(start, stop) for inverter in self._inverters))
+
+        now = datetime.datetime.now()
+        yesterday = now - datetime.timedelta(days=1)
+        start = datetime.datetime.combine(datetime.date.today().replace(year=year, month=month, day=1), datetime.time(23, 0)) - datetime.timedelta(days=1)
+        stop = datetime.datetime.combine(yesterday.date(), datetime.time(23, 0))
+        histories = await asyncio.gather(*(inverter.read_history(int(start.timestamp()), int(stop.timestamp())) for inverter in self._inverters))
         total = {}
         for inverter in histories:
             for i in range(1, len(inverter)):
@@ -64,6 +67,3 @@ class Site:
         site_total.insert(0, {'inverter': 'site'})
         histories.append(site_total)
         self._influx.write_history(histories)
-
-
-

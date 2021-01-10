@@ -15,6 +15,21 @@ from configuration import INFLUXDB_ENABLE, INFLUXDB_DATABASE, INFLUXDB_IPADDR, I
 logger = logging.getLogger(APPLICATION_LOG_LOGGER_NAME)
 
 
+LP_LOOKUP = {
+    'ac_measurements/power': {'measurement': 'ac_measurements', 'field': 'power'},
+    'ac_measurements/voltage': {'measurement': 'ac_measurements', 'field': 'voltage'},
+    'ac_measurements/current': {'measurement': 'ac_measurements', 'field': 'current'},
+    'ac_measurements/efficiency': {'measurement': 'ac_measurements', 'field': 'efficiency'},
+    'dc_measurements/power': {'measurement': 'dc_measurements', 'field': 'power'},
+    'status/reason_for_derating': {'measurement': 'status', 'field': 'derating'},
+    'status/general_operating_status': {'measurement': 'status', 'field': 'operating_status'},
+    'status/grid_relay': {'measurement': 'status', 'field': 'grid_relay'},
+    'status/condition': {'measurement': 'status', 'field': 'condition'},
+    'production/total': {'measurement': 'production', 'field': 'total'},
+    'production/daily_total': {'measurement': 'production', 'field': 'daily_total'},
+}
+
+
 class InfluxDB():
     def __init__(self):
         self._client = None
@@ -33,6 +48,12 @@ class InfluxDB():
             logger.info(f"Closed the InfluxDB database '{INFLUXDB_DATABASE}'")
 
     def write_history(self, site):
+        if not self._client:
+            return False
+
+        lookup = LP_LOOKUP.get('production/daily_total')
+        measurement = lookup.get('measurement')
+        field = lookup.get('field')
         lps = []
         for inverter in site:
             inverter_name = inverter.pop(0)
@@ -41,7 +62,7 @@ class InfluxDB():
                 t = history['t']
                 v = history['v']
                 if isinstance(v, int):
-                    lp = f'production,inverter={name} total={v} {t}'
+                    lp = f'{measurement},inverter={name} {field}={v} {t}'
                     lps.append(lp)
 
         try:
