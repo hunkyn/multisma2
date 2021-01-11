@@ -67,4 +67,3 @@ class Site:
         site_total.insert(0, {'inverter': 'site'})
         histories.append(site_total)
         self._influx.write_history(histories)
-        pprint(histories)
