@@ -5,6 +5,12 @@ TIMEZONE = 'America/New_York'
 SITE_LATITUDE = 42
 SITE_LONGITUDE = -76
 
+# Solar array information for predictions
+SITE_AZIMUTH = 180
+SITE_TILT = 30
+SITE_PANEL_AREA = 144
+SITE_PANEL_EFFICIENCY = 0.175
+
 # Application log file customization
 APPLICATION_LOG_FILE = 'log/multisma2'
 APPLICATION_LOG_FORMAT = '[%(asctime)s] [%(module)s] [%(levelname)s] %(message)s'
