@@ -72,3 +72,15 @@ class InfluxDB():
             logger.error(f"Database write_history() failed")
             result = False
         return result
+
+    def write_points(self, points):
+        if not self._client:
+            return False
+
+        try:
+            result = self._client.write_points(points=points, time_precision='s', protocol='line')
+            logger.info(f"Wrote {len(points)} line protocol points")
+        except (InfluxDBClientError, InfluxDBServerError):
+            logger.error(f"Database write_points() failed")
+            result = False
+        return result

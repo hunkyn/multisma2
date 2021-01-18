@@ -2,17 +2,22 @@
 
 import asyncio
 import logging
+import dateutil
 #from dateutil.relativedelta import *
 from dateutil.rrule import rrule, MONTHLY
 import datetime
 import copy
+import clearsky
 
 from pprint import pprint
 
 from inverter import Inverter
 from influx import InfluxDB
+import astral as astral
 
 from configuration import INVERTERS
+from configuration import SITE_LATITUDE, SITE_LONGITUDE, TIMEZONE, SITE_NAME, SITE_REGION
+from configuration import SITE_AZIMUTH, SITE_TILT, SITE_PANEL_AREA, SITE_PANEL_EFFICIENCY
 from configuration import APPLICATION_LOG_LOGGER_NAME
 
 
@@ -95,8 +100,29 @@ class Site:
         inverters.append(site_total)
         self._influx.write_history(inverters)
     
+    async def irradiance_today(self):
+        # Create location object to store lat, lon, timezone
+        site = clearsky.site_location(SITE_LATITUDE, SITE_LONGITUDE, tz=TIMEZONE)
+        siteinfo = astral.LocationInfo(SITE_NAME, SITE_REGION, TIMEZONE, SITE_LATITUDE, SITE_LONGITUDE)
+        tzinfo = dateutil.tz.gettz(TIMEZONE)
+        dawn = astral.sun.dawn(observer=siteinfo.observer, tzinfo=tzinfo)
+        dusk = astral.sun.dusk(observer=siteinfo.observer, tzinfo=tzinfo) + datetime.timedelta(minutes=10)
+        start = datetime.datetime(dawn.year, dawn.month, dawn.day, dawn.hour, int(int(dawn.minute/10)*10))
+        stop = datetime.datetime(dusk.year, dusk.month, dusk.day, dusk.hour, int(int(dusk.minute/10)*10))
+
+        # Get irradiance data for today and convert to InfluxDB line protocol
+        irradiance = clearsky.get_irradiance(site=site, start=start.strftime("%Y-%m-%d %H:%M:00"), end=stop.strftime("%Y-%m-%d %H:%M:00"), tilt=SITE_TILT, azimuth=SITE_AZIMUTH, freq='10min')
+        lp_points = []
+        for point in irradiance:
+            t = point['t']
+            v = point['v'] * SITE_PANEL_AREA * SITE_PANEL_EFFICIENCY
+            lp = f'prediction,inverter="site" production={round(v, 1)} {t}'
+            lp_points.append(lp)
+        self._influx.write_points(lp_points)
+
     async def run(self):
         await asyncio.gather(
             self.populate_months(),
             self.populate_days(),
+            self.irradiance_today(),
         )
