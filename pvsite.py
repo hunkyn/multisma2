@@ -96,5 +96,7 @@ class Site:
         self._influx.write_history(inverters)
     
     async def run(self):
-        await self.populate_months()
-        await self.populate_days()
+        await asyncio.gather(
+            self.populate_months(),
+            self.populate_days(),
+        )
