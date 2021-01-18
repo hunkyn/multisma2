@@ -3,7 +3,6 @@
 import asyncio
 import logging
 import dateutil
-#from dateutil.relativedelta import *
 from dateutil.rrule import rrule, MONTHLY
 import datetime
 import copy
@@ -13,7 +12,9 @@ from pprint import pprint
 
 from inverter import Inverter
 from influx import InfluxDB
-import astral as astral
+
+from astral.sun import sun
+from astral import LocationInfo
 
 from configuration import INVERTERS
 from configuration import SITE_LATITUDE, SITE_LONGITUDE, TIMEZONE, SITE_NAME, SITE_REGION
@@ -103,10 +104,11 @@ class Site:
     async def irradiance_today(self):
         # Create location object to store lat, lon, timezone
         site = clearsky.site_location(SITE_LATITUDE, SITE_LONGITUDE, tz=TIMEZONE)
-        siteinfo = astral.LocationInfo(SITE_NAME, SITE_REGION, TIMEZONE, SITE_LATITUDE, SITE_LONGITUDE)
+        siteinfo = LocationInfo(SITE_NAME, SITE_REGION, TIMEZONE, SITE_LATITUDE, SITE_LONGITUDE)
         tzinfo = dateutil.tz.gettz(TIMEZONE)
-        dawn = astral.sun.dawn(observer=siteinfo.observer, tzinfo=tzinfo)
-        dusk = astral.sun.dusk(observer=siteinfo.observer, tzinfo=tzinfo) + datetime.timedelta(minutes=10)
+        astral = sun(observer=siteinfo.observer, tzinfo=tzinfo)
+        dawn = astral['dawn']
+        dusk = astral['dusk'] + datetime.timedelta(minutes=10)
         start = datetime.datetime(dawn.year, dawn.month, dawn.day, dawn.hour, int(int(dawn.minute/10)*10))
         stop = datetime.datetime(dusk.year, dusk.month, dusk.day, dusk.hour, int(int(dusk.minute/10)*10))
 
