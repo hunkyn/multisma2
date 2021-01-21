@@ -62,7 +62,7 @@ class InfluxDB():
                 t = history['t']
                 v = history['v']
                 if isinstance(v, int):
-                    lp = f'{measurement},inverter={name} {field}={v} {t}'
+                    lp = f'{measurement},inverter={name} {field}={v}i {t}'
                     lps.append(lp)
 
         try:
