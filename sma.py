@@ -142,3 +142,9 @@ class SMA:
         payload = {"destDev": [], "key": 28704, "tStart": start, "tEnd": end}
         result_body = await self._read_body(URL_LOGGER, payload)
         return result_body
+
+    async def read_fine_history(self, start, end):
+        """{"destDev":[],"key":28672,"tStart":1601521200,"tEnd":1604217600}."""
+        payload = {"destDev": [], "key": 28672, "tStart": start, "tEnd": end}
+        result_body = await self._read_body(URL_LOGGER, payload)
+        return result_body

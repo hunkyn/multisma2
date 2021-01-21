@@ -36,7 +36,7 @@ class Inverter:
         return True
 
     async def close(self):
-        """Log out of the intverter."""
+        """Log out of the inverter."""
         if self._sma:
             await self._sma.close_session()
             self._sma = None
@@ -46,3 +46,10 @@ class Inverter:
         history = await self._sma.read_history(start, stop)
         history.insert(0, {'inverter': self._name})
         return history
+
+    async def read_fine_history(self, start, stop):
+        """Read the baseline inverter production."""
+        history = await self._sma.read_fine_history(start, stop)
+        history.insert(0, {'inverter': self._name})
+        return history
+
