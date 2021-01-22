@@ -118,7 +118,7 @@ class Site:
             for point in irradiance:
                 t = point['t']
                 v = point['v'] * SITE_PANEL_AREA * SITE_PANEL_EFFICIENCY
-                lp = f'production,inverter="site" irradiance={round(v, 1)} {t}'
+                lp = f'production,inverter=site irradiance={round(v, 1)} {t}'
                 lp_points.append(lp)
             date += delta
 
@@ -160,7 +160,6 @@ class Site:
 
     async def run(self):
         await asyncio.gather(
-            ####self.populate_months(),
             self.populate_days(),
             self.populate_production(),
             self.populate_irradiance(),
