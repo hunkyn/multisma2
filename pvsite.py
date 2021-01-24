@@ -124,6 +124,7 @@ class Site:
 
         self._influx.write_points(lp_points)
 
+    # Need to total points for which we have data from all inverters
     async def populate_production(self):
         delta = datetime.timedelta(days=1)
         date = datetime.date(year=2021, month=1, day=1)
@@ -134,24 +135,28 @@ class Site:
             stop = start + delta
             inverters = await asyncio.gather(*(inverter.read_fine_history(int(start.timestamp()), int(stop.timestamp())) for inverter in self._inverters))
             total = {}
+            count = {}
             for inverter in inverters:
+                last_non_null = None
                 for i in range(1, len(inverter)):
                     t = inverter[i]['t']
                     v = inverter[i]['v']
-                    if v is None:
-                        if i > 1:
-                            inverter[i]['v'] = inverter[i-1]['v']
-                        else:
-                            inverter[i]['v'] = inverter[i+1]['v']
-                        v = inverter[i]['v']
+                    if not v:
+                        if not last_non_null:
+                            continue
+                        v = last_non_null
                     if t in total:
                         total[t] += v
+                        count[t] += 1
                     else:
                         total[t] = v
+                        count[t] = 1
+                    last_non_null = v
 
             site_total = []
             for t, v in total.items():
-                site_total.append({'t': t, 'v': v})
+                if count[t] == len(inverters):
+                    site_total.append({'t': t, 'v': v})
             site_total.insert(0, {'inverter': 'site'})
             inverters.append(site_total)
             self._influx.write_history(inverters, 'production/total')
