@@ -45,12 +45,10 @@ class Site:
         """Initialize the Site object."""
         self._influx.start()
         results = await asyncio.gather(*(inverter.initialize() for inverter in self._inverters))
-        #return True
         return False not in results
 
     async def stop(self):
         """Shutdown the Site object."""
-        #pass
         await asyncio.gather(*(inverter.close() for inverter in self._inverters))
         self._influx.stop()
 
@@ -72,27 +70,26 @@ class Site:
                 date += delta
 
         total = {}
+        count = {}
         for inverter in inverters:
+            last_non_null = None
             for i in range(1, len(inverter)):
                 t = inverter[i]['t']
                 v = inverter[i]['v']
-                if v is None:
-                    if i > 1:
-                        inverter[i]['v'] = inverter[i-1]['v']
-                    else:
-                        inverter[i]['v'] = inverter[i+1]['v']
-                    v = inverter[i]['v']
-                if t in total:
-                    total[t] += v
-                else:
-                    total[t] = v
+                if not v:
+                    if not last_non_null:
+                        continue
+                    v = last_non_null
+                total[t] = v + total.get(t, 0)
+                count[t] = count.get(t, 0) + 1
+                last_non_null = v
 
         site_total = []
         for t, v in total.items():
-            site_total.append({'t': t, 'v': v})
+            if count[t] == len(inverters):
+                site_total.append({'t': t, 'v': v})
         site_total.insert(0, {'inverter': 'site'})
         inverters.append(site_total)
-        #pprint(inverters)
         self._influx.write_history(inverters, 'production/today')
     
     async def populate_irradiance(self):
@@ -145,12 +142,8 @@ class Site:
                         if not last_non_null:
                             continue
                         v = last_non_null
-                    if t in total:
-                        total[t] += v
-                        count[t] += 1
-                    else:
-                        total[t] = v
-                        count[t] = 1
+                    total[t] = v + total.get(t, 0)
+                    count[t] = count.get(t, 0) + 1
                     last_non_null = v
 
             site_total = []
